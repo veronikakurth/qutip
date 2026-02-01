@@ -33,8 +33,7 @@ cpdef double complex mean_dia(Dia matrix) nogil:
   if nnz == 0:
     return 0.0
   
-  mean = mean/nnz
-  return mean
+  return mean/nnz
 
 
 cpdef double complex mean_dense(Dense matrix) nogil:
@@ -50,8 +49,7 @@ cpdef double complex mean_dense(Dense matrix) nogil:
     mean += cur
     nnz += 1
   
-  mean /= nnz
-  return mean
+  return mean/nnz
 
 cpdef double mean_abs_csr(CSR matrix) nogil:
   cdef int nnz, inc = 1
@@ -64,7 +62,33 @@ cpdef double mean_abs_csr(CSR matrix) nogil:
   
 
 cpdef double mean_abs_dia(Dia matrix) nogil:
-  pass
+  cdef int offset, diag, start, end, col=1
+  cdef double mean_abs = 0
+  cdef size_t nnz = 0
+
+  for diag in range(matrix.num_diag):
+      offset = matrix.offsets[diag]
+      start = int_max(0, offset)
+      end = min(matrix.shape[1], matrix.shape[0] + offset)
+      for col in range(start, end):
+          mean_abs += fabs(matrix.data[diag * matrix.shape[1] + col])
+          nnz += 1
+  if nnz == 0:
+    return 0.0
+  
+  return mean_abs/nnz
 
 cpdef double mean_abs_dense(Dense matrix) nogil:
-  pass
+  cdef size_t ptr, nnz = 0
+  cdef double mean_abs = 0, cur
+  
+  for ptr in range(matrix.shape[0] * matrix.shape[1]):
+    cur = fabs(matrix.data[ptr])
+
+    if cur == 0.0:
+      continue
+    
+    mean_abs += cur
+    nnz += 1
+  
+  return mean_abs/nnz
