@@ -1,7 +1,7 @@
 from qutip.core.data cimport CSR, Dia
 from libc.math cimport fabs
 
-cpdef double complex mean_csr(CSR matrix):
+cpdef double complex mean_csr(CSR matrix) nogil :
   cdef size_t nnz, ptr
   cdef double complex mean = 0
 
@@ -17,7 +17,7 @@ cpdef double complex mean_csr(CSR matrix):
   return mean
 
 
-cpdef double complex mean_dia(Dia matrix):
+cpdef double complex mean_dia(Dia matrix) nogil:
   cdef int offset, diag, start, end, col=1
   cdef double complex mean = 0
   cdef size_t nnz = 0
@@ -36,7 +36,7 @@ cpdef double complex mean_dia(Dia matrix):
   return mean
 
 
-cpdef double complex mean_dense(Dense matrix):
+cpdef double complex mean_dense(Dense matrix) nogil:
   cdef size_t ptr, nnz = 0
   cdef double complex mean = 0, cur
   

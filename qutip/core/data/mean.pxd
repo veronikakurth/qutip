@@ -1,6 +1,6 @@
 from qutip.core.data cimport CSR, Dense, Dia, Data
 
 # TODO: verify signatures for Cython functions - are except/nogil keywords necessary?
-cpdef double complex mean_csr(CSR matrix)
-cpdef double complex mean_dia(Dia matrix)
-cpdef double complex mean_dense(Dense matrix)
+cpdef double complex mean_csr(CSR matrix) nogil
+cpdef double complex mean_dia(Dia matrix) nogil
+cpdef double complex mean_dense(Dense matrix) nogil
