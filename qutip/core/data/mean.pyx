@@ -1,7 +1,8 @@
 from qutip.core.data cimport CSR, Dia
 from libc.math cimport fabs
+from scipy.linalg cimport cython_blas as blas
 
-cpdef double complex mean_csr(CSR matrix) nogil :
+cpdef double complex mean_csr(CSR matrix) nogil:
   cdef size_t nnz, ptr
   cdef double complex mean = 0
 
@@ -51,3 +52,19 @@ cpdef double complex mean_dense(Dense matrix) nogil:
   
   mean /= nnz
   return mean
+
+cpdef double mean_abs_csr(CSR matrix) nogil:
+  cdef int nnz, inc = 1
+  nnz = matrix.row_index[matrix.shape[0]]
+  
+  if nnz == 0:
+    return 0.0
+
+  return blas.dzasum(&nnz, &matrix.data[0], &inc) / nnz
+  
+
+cpdef double mean_abs_dia(Dia matrix) nogil:
+  pass
+
+cpdef double mean_abs_dense(Dense matrix) nogil:
+  pass
