@@ -1,6 +1,12 @@
-from qutip.core.data cimport CSR, Dia
+#cython: language_level=3
+#cython: boundscheck=False, wraparound=False, initializedcheck=False
+
+from qutip.core.data cimport CSR, Dia, Dense
 from libc.math cimport fabs
 from scipy.linalg cimport cython_blas as blas
+
+# This module is meant to be accessed by dot-access (e.g. mean.mean_csr).
+__all__ = []
 
 cpdef double complex mean_csr(CSR matrix) nogil:
   cdef size_t nnz, ptr

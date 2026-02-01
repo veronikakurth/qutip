@@ -1,4 +1,7 @@
-from qutip.core.data cimport CSR, Dense, Dia, Data
+#cython: language_level=3
+#cython: boundscheck=False, wraparound=False, initializedcheck=False
+
+from qutip.core.data cimport CSR, Dense, Dia
 
 # TODO: verify signatures for Cython functions - are except/nogil keywords necessary?
 cpdef double complex mean_csr(CSR matrix) nogil
