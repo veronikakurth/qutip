@@ -2,13 +2,15 @@
 #cython: boundscheck=False, wraparound=False, initializedcheck=False
 
 from qutip.core.data cimport CSR, Dia, Dense
-from libc.math cimport fabs
 from scipy.linalg cimport cython_blas as blas
+
+cdef extern from "<complex>" namespace "std":
+  double abs(double complex z) nogil
 
 # This module is meant to be accessed by dot-access (e.g. mean.mean_csr).
 __all__ = []
 
-cpdef double complex mean_csr(CSR matrix) nogil:
+cpdef double complex mean_csr(CSR matrix) noexcept nogil:
   cdef size_t nnz, ptr
   cdef double complex mean = 0
 
@@ -24,7 +26,7 @@ cpdef double complex mean_csr(CSR matrix) nogil:
   return mean
 
 
-cpdef double complex mean_dia(Dia matrix) nogil:
+cpdef double complex mean_dia(Dia matrix) noexcept nogil:
   cdef int offset, diag, start, end, col=1
   cdef double complex mean = 0
   cdef size_t nnz = 0
@@ -42,7 +44,7 @@ cpdef double complex mean_dia(Dia matrix) nogil:
   return mean/nnz
 
 
-cpdef double complex mean_dense(Dense matrix) nogil:
+cpdef double complex mean_dense(Dense matrix) noexcept nogil:
   cdef size_t ptr, nnz = 0
   cdef double complex mean = 0, cur
   
@@ -57,7 +59,7 @@ cpdef double complex mean_dense(Dense matrix) nogil:
   
   return mean/nnz
 
-cpdef double mean_abs_csr(CSR matrix) nogil:
+cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
   cdef int nnz, inc = 1
   nnz = matrix.row_index[matrix.shape[0]]
   
@@ -67,7 +69,7 @@ cpdef double mean_abs_csr(CSR matrix) nogil:
   return blas.dzasum(&nnz, &matrix.data[0], &inc) / nnz
   
 
-cpdef double mean_abs_dia(Dia matrix) nogil:
+cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
   cdef int offset, diag, start, end, col=1
   cdef double mean_abs = 0
   cdef size_t nnz = 0
@@ -77,19 +79,19 @@ cpdef double mean_abs_dia(Dia matrix) nogil:
       start = int_max(0, offset)
       end = min(matrix.shape[1], matrix.shape[0] + offset)
       for col in range(start, end):
-          mean_abs += fabs(matrix.data[diag * matrix.shape[1] + col])
+          mean_abs += abs(matrix.data[diag * matrix.shape[1] + col])
           nnz += 1
   if nnz == 0:
     return 0.0
   
   return mean_abs/nnz
 
-cpdef double mean_abs_dense(Dense matrix) nogil:
+cpdef double mean_abs_dense(Dense matrix) noexcept nogil:
   cdef size_t ptr, nnz = 0
   cdef double mean_abs = 0, cur
   
   for ptr in range(matrix.shape[0] * matrix.shape[1]):
-    cur = fabs(matrix.data[ptr])
+    cur = abs(matrix.data[ptr])
 
     if cur == 0.0:
       continue
