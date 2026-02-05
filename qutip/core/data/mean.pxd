@@ -12,6 +12,4 @@ cpdef double mean_abs_csr(CSR matrix) noexcept nogil
 cpdef double mean_abs_dia(Dia matrix) noexcept nogil
 cpdef double mean_abs_dense(Dense matrix) noexcept nogil
 
-cdef inline int int_max(int a, int b) nogil:
-    # Name collision between the ``max`` builtin and norm.max
-    return b if b > a else a
+
