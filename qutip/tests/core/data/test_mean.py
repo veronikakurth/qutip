@@ -1,8 +1,11 @@
 import pytest
 import numpy as np
 import qutip as qt
-from qutip.core.data.mean import mean_csr, mean_dia
-from qutip.core.data import CSR, Dia
+import numbers
+
+from qutip.core.data.mean import mean_csr, mean_dia, mean_dense
+from qutip.core.data import CSR, Dia, Dense
+from . import test_mathematics as testing
 
 
 # Fixtures to be reused
@@ -74,25 +77,38 @@ def test_csr_matrix():
 
   matrix = CSR((data, col_index, row_index), shape=(N, N))
 
-  expected = 1.0/3.0 #np.mean(data)
+  expected = 1.0/3.0
   result = mean_csr(matrix)
   assert np.isclose(result, expected, qt.settings.core['atol'])
 
 
+class TestMean(testing.UnaryOpMixin):
+  
+  def op_numpy(self, matrix):
+    return np.mean(matrix)
+
+  specialisations = [
+      pytest.param(mean_csr, CSR, numbers.Complex),
+      pytest.param(mean_dia, Dia, numbers.Complex),
+      pytest.param(mean_dense, Dense, numbers.Complex),
+  ]
+
+
+
 # Dia matrices
 
-def test_dia_matrix_main_diag():
-  N = 3
-
-  diag_data = np.array([1, 1, 2], dtype=complex)
-  offsets = np.array([0], dtype=np.int32)
-
-  matrix = Dia((diag_data, offsets), shape=(N, N))
-
-  expected = 4/3
-  result = mean_dia(matrix)
-
-  assert np.isclose(result, expected, qt.settings.core['atol'])
+# def test_dia_matrix_main_diag():
+#   N = 3
+# 
+#   diag_data = np.array([1, 1, 2], dtype=complex)
+#   offsets = np.array([0], dtype=np.int32)
+# 
+#   matrix = Dia((diag_data, offsets), shape=(N, N))
+# 
+#   expected = 4/3
+#   result = mean_dia(matrix)
+# 
+#   assert np.isclose(result, expected, qt.settings.core['atol'])
 
 
 # ------ Dense matrices 
