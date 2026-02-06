@@ -115,3 +115,44 @@ cpdef double mean_abs_dense(Dense matrix) noexcept nogil:
     nnz += 1
   
   return mean_abs / nnz
+
+from .dispatch import Dispatcher as _Dispatcher
+import inspect as _inspect
+
+mean = _Dispatcher(
+      _inspect.Signature([
+        _inspect.Parameter('matrix', _inspect.Parameter.POSITIONAL_ONLY),
+      ]),
+      name='mean',
+      module=__name__,
+      inputs=('matrix',),
+)
+mean.__doc__ =\
+    """
+    Compute the mean value of a matrix.
+    """
+mean.add_specialisations([
+  (Dense, mean_dense),
+  (Dia, mean_dia),
+  (CSR, mean_csr),
+], _defer=True) # TODO: what does defer do?
+)
+
+mean_abs = _Dispatcher(
+      _inspect.Signature([
+        _inspect.Parameter('matrix', _inspect.Parameter.POSITIONAL_ONLY),
+      ]),
+      name='mean_abs',
+      module=__name__,
+      inputs=('matrix',),
+)
+mean_abs.__doc__ =\
+    """
+    Compute the mean absolute value of a matrix.
+    """
+mean_abs.add_specialisations([
+  (Dense, mean_abs_dense),
+  (Dia, mean_abs_dia),
+  (CSR, mean_abs_csr),
+], _defer=True)
+)
