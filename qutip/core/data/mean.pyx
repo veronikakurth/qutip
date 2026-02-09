@@ -136,7 +136,6 @@ mean.add_specialisations([
   (Dia, mean_dia),
   (CSR, mean_csr),
 ], _defer=True) # TODO: what does defer do?
-)
 
 mean_abs = _Dispatcher(
       _inspect.Signature([
@@ -155,4 +154,3 @@ mean_abs.add_specialisations([
   (Dia, mean_abs_dia),
   (CSR, mean_abs_csr),
 ], _defer=True)
-)
