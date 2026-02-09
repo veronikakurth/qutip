@@ -70,14 +70,19 @@ cpdef double complex mean_dense(Dense matrix) noexcept nogil:
   return mean / nnz
 
 cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
-  cdef int nnz, inc = 1
+  cdef size_t nnz, ptr
+  cdef double mean = 0
+
   nnz = matrix.row_index[matrix.shape[0]]
-  
+
   if nnz == 0:
     return 0.0
 
-  return blas.dzasum(&nnz, &matrix.data[0], &inc) / nnz
+  for ptr in range(nnz):
+    mean += abs(matrix.data[ptr])
   
+  mean = mean / nnz
+  return mean
 
 cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
   cdef int offset, diag, start, end, col=1
