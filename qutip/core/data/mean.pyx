@@ -115,13 +115,13 @@ mean = _Dispatcher(
             _inspect.Signature([
                 _inspect.Parameter('matrix', _inspect.Parameter.POSITIONAL_ONLY),
             ]),
-            name='mean',
+            name='mean_nonzero',
             module=__name__,
             inputs=('matrix',),
 )
 mean.__doc__ =\
         """
-        Compute the mean value of a matrix.
+        Adapted mean value: compute the mean value of non-zero entries of a matrix.
         """
 mean.add_specialisations([
     (Dense, mean_dense),
@@ -133,13 +133,13 @@ mean_abs = _Dispatcher(
             _inspect.Signature([
                 _inspect.Parameter('matrix', _inspect.Parameter.POSITIONAL_ONLY),
             ]),
-            name='mean_abs',
+            name='mean_abs_nonzero',
             module=__name__,
             inputs=('matrix',),
 )
 mean_abs.__doc__ =\
         """
-        Compute the mean absolute value of a matrix.
+        Adapted mean value: compute the mean value of absolute values of non-zero entries of a matrix.
         """
 mean_abs.add_specialisations([
     (Dense, mean_abs_dense),
