@@ -31,14 +31,16 @@ class TestMean(testing.UnaryOpMixin):
 
 class TestAbsMean(testing.UnaryOpMixin):
     def op_numpy(self, matrix):
-        nnz = np.count_nonzero(matrix)
+        atol = qt.settings.core["atol"]
+
+        # Ignore values close to zero
+        mask = ~np.isclose(matrix, 0.0, atol=atol)
+        nnz = np.count_nonzero(mask)
 
         if nnz == 0:
             return 0.0
 
-        abs_matrix = np.abs(matrix)
-        mean_val = abs_matrix.sum() / nnz
-        return mean_val
+        return np.abs(matrix[mask].sum() / nnz)
 
     specialisations = [
         pytest.param(mean_abs_csr, CSR, numbers.Complex),
