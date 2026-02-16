@@ -1,6 +1,7 @@
 #cython: language_level=3
 #cython: boundscheck=False, wraparound=False, initializedcheck=False
-
+import numpy as np
+from qutip import settings
 from qutip.core.data cimport CSR, Dia, Dense
 
 cdef extern from "<complex>" namespace "std":
@@ -50,13 +51,13 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
     return mean / nnz
 
 
-cpdef double complex mean_dense(Dense matrix) noexcept nogil:
+cpdef double complex mean_dense(Dense matrix) noexcept:
     cdef size_t ptr, nnz = 0
     cdef double complex mean = 0, cur
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = matrix.data[ptr]
 
-        if cur == 0.0:
+        if np.isclose(cur, 0.0, atol=settings.core['atol']):
             continue
         mean += cur
         nnz += 1
