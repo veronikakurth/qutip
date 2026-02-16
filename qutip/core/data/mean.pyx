@@ -102,7 +102,7 @@ cpdef double mean_abs_dense(Dense matrix) noexcept nogil:
     cdef double mean_abs = 0, cur
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = abs(matrix.data[ptr])
-        if cur == 0.0:
+        if np.isclose(cur, 0.0, atol=settings.core['atol']):
             continue
         mean_abs += cur
         nnz += 1
