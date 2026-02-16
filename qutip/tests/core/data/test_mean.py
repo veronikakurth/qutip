@@ -38,7 +38,9 @@ class TestMean(testing.UnaryOpMixin):
         data = np.array([[0.0, atol * scale],
                          [1.0, 2.0]], dtype=complex)
 
-        expected = self.op_numpy(data)
+        mask = ~np.isclose(data, 0.0, atol=atol)
+
+        expected = self.op_numpy(data[mask])
 
         matrix = qt.Qobj(data).to(dtype).data
         result = op(matrix)
@@ -74,8 +76,9 @@ class TestAbsMean(testing.UnaryOpMixin):
 
         data = np.array([[0.0, atol * scale],
                          [1.0, 2.0]], dtype=complex)
+        mask = ~np.isclose(data, 0.0, atol=atol)
 
-        expected = self.op_numpy(data)
+        expected = self.op_numpy(data[mask])
 
         matrix = qt.Qobj(data).to(dtype).data
         result = op(matrix)
