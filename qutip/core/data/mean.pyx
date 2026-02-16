@@ -60,6 +60,8 @@ cpdef double complex mean_dense(Dense matrix) noexcept:
             continue
         mean += cur
         nnz += 1
+    if nnz == 0:
+        return 0.0
     return mean / nnz
 
 cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
@@ -105,6 +107,8 @@ cpdef double mean_abs_dense(Dense matrix) noexcept:
             continue
         mean_abs += cur
         nnz += 1
+    if nnz == 0:
+        return 0.0
     return mean_abs / nnz
 
 from .dispatch import Dispatcher as _Dispatcher
