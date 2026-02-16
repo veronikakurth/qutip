@@ -97,7 +97,7 @@ cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
         return 0.0
     return mean_abs / nnz
 
-cpdef double mean_abs_dense(Dense matrix) noexcept nogil:
+cpdef double mean_abs_dense(Dense matrix) noexcept:
     cdef size_t ptr, nnz = 0
     cdef double mean_abs = 0, cur
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
