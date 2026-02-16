@@ -11,19 +11,23 @@ from . import test_mathematics as testing
 
 class TestMean(testing.UnaryOpMixin):
     def op_numpy(self, matrix):
-        nnz = np.count_nonzero(matrix)
+        atol = qt.settings.core["atol"]
+
+        # Ignore values close to zero
+        mask = ~np.isclose(matrix, 0.0, atol=atol)
+        nnz = np.count_nonzero(mask)
 
         if nnz == 0:
             return 0.0
 
-        mean_val = matrix.sum() / nnz
-        return mean_val
+        return matrix.sum() / nnz
 
     specialisations = [
         pytest.param(mean_csr, CSR, numbers.Complex),
         pytest.param(mean_dia, Dia, numbers.Complex),
         pytest.param(mean_dense, Dense, numbers.Complex),
     ]
+
 
 class TestAbsMean(testing.UnaryOpMixin):
     def op_numpy(self, matrix):
