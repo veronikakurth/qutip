@@ -27,6 +27,23 @@ class TestMean(testing.UnaryOpMixin):
         pytest.param(mean_dia, Dia, numbers.Complex),
         pytest.param(mean_dense, Dense, numbers.Complex),
     ]
+    @pytest.mark.parametrize("op, dtype, _", specialisations)
+    @pytest.mark.parametrize("scale", [0.999, 1.0, 1.001])
+    def test_atol_boundary(self, op, dtype, _, scale):
+        """
+        Boundary tests around atol value
+        """
+        atol = qt.settings.core["atol"]
+
+        data = np.array([[0.0, atol * scale],
+                         [1.0, 2.0]], dtype=complex)
+
+        expected = self.op_numpy(data)
+
+        matrix = qt.Qobj(data).to(dtype).data
+        result = op(matrix)
+
+        assert np.allclose(result, expected)
 
 
 class TestAbsMean(testing.UnaryOpMixin):
@@ -47,3 +64,20 @@ class TestAbsMean(testing.UnaryOpMixin):
         pytest.param(mean_abs_dia, Dia, numbers.Complex),
         pytest.param(mean_abs_dense, Dense, numbers.Complex),
     ]
+    @pytest.mark.parametrize("op, dtype, _", specialisations)
+    @pytest.mark.parametrize("scale", [0.999, 1.0, 1.001])
+    def test_atol_boundary(self, op, dtype, _, scale):
+        """
+        Boundary tests around atol value
+        """
+        atol = qt.settings.core["atol"]
+
+        data = np.array([[0.0, atol * scale],
+                         [1.0, 2.0]], dtype=complex)
+
+        expected = self.op_numpy(data)
+
+        matrix = qt.Qobj(data).to(dtype).data
+        result = op(matrix)
+
+        assert np.allclose(result, expected)
