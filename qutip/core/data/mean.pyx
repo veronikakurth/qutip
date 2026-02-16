@@ -1,5 +1,5 @@
-#cython: language_level=3
-#cython: boundscheck=False, wraparound=False, initializedcheck=False
+# cython: language_level=3
+# cython: boundscheck=False, wraparound=False, initializedcheck=False
 import numpy as np
 from qutip import settings
 from qutip.core.data cimport CSR, Dia, Dense
@@ -39,7 +39,6 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
         offset = matrix.offsets[diag]
         start = int_max(0, offset)
         end = int_min(matrix.shape[1], matrix.shape[0] + offset)
-
         if end < start:
             continue
 
@@ -139,7 +138,8 @@ mean_abs = _Dispatcher(
 )
 mean_abs.__doc__ =\
         """
-        Adapted mean value: compute the mean value of absolute values of non-zero entries of a matrix.
+        Adapted mean value: \
+        compute the mean value of absolute values of non-zero entries of a matrix.
         """
 mean_abs.add_specialisations([
     (Dense, mean_abs_dense),
