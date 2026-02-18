@@ -1,4 +1,3 @@
-from qutip import liouvillian, lindblad_dissipator, Qobj, qzero_like, qeye_like
 from qutip import vector_to_operator, operator_to_vector, hilbert_dist
 from qutip import settings, CoreOptions
 import qutip.core.data as _data
@@ -32,6 +31,8 @@ def _reverse_rcm(rho, perm):
     rho = _data.permute.indices(rho, rev_perm, None, dtype=type(rho))
     return rho
 
+# TODO: think of a more maintainable way to contain all information about available methods & solvers. Apparently there is also an implicit mapping of solver names by user and the ones corresponding to actual functions
+# TODO: possible kwargs must be much better documented. Drawbacks: might be difficult to maintain since we rely on numpy and scipy functions' interfaces. Is there an automatized approach to it? 
 
 def steadystate(A, c_ops=[], *, method='direct', solver=None, **kwargs):
     """
@@ -160,23 +161,24 @@ def steadystate(A, c_ops=[], *, method='direct', solver=None, **kwargs):
     # Keys supported in v4, but removed in v5
     if kwargs.pop("return_info", False):
         warn("Steadystate no longer supports return_info", DeprecationWarning)
-    if "mtol" in kwargs and "power_tol" not in kwargs:
+    if "mtol" in kwargs and "power_tol" not in kwargs: # TODO: Lacks explanation for this argument
         kwargs["power_tol"] = kwargs["mtol"]
-    kwargs.pop("mtol", None)
+    kwargs.pop("mtol", None) # TODO: can be moved to the previous if statement, unnecessary line
 
-    if method == "eigen":
+    if method == "eigen": # TODO: would it be neater if we use "case" syntax
         return _steadystate_eigen(A, **kwargs)
     if method == "svd":
         return _steadystate_svd(A, **kwargs)
 
+    # TODO: I think the entire logic here can be refactored into a separate entity performing 1) checks on data types + conversions, 2) matching methods and kwargs
     # We want to be able to use this without having to know what data type the
     # liouvillian uses. For extra data types (tensorflow) we can expect
     # the users to know they are using them and choose an appropriate solver
-    sparse_solvers = ["spsolve", "mkl_spsolve", "gmres", "lgmres", "bicgstab"]
-    if not isinstance(A.data, (_data.CSR, _data.Dense)):
+    sparse_solvers = ["spsolve", "mkl_spsolve", "gmres", "lgmres", "bicgstab"] # TODO: Can be refactored into an enumerator or so. Can also become an attribute of the class to be ablr to generate documentation about supported methods more automatically and impose validation in case of non supported methods
+    if not isinstance(A.data, (_data.CSR, _data.Dense)): # TODO: pass doesn't give any value to this check. Either give a warning to the user, or do something here
         # Tensorflow, jax, etc. data type
         pass
-    elif isinstance(A.data, _data.CSR) and solver in ["solve", "lstsq"]:
+    elif isinstance(A.data, _data.CSR) and solver in ["solve", "lstsq"]: # Here we start to handle conversions (a lot of repeatable logic) into different data types based on a solver chosen by a user.
         A = A.to("dense")
     elif isinstance(A.data, _data.Dense) and solver in sparse_solvers:
         A = A.to("csr")
@@ -190,7 +192,7 @@ def steadystate(A, c_ops=[], *, method='direct', solver=None, **kwargs):
 
     if method in ["direct", "iterative"]:
         # Remove unused kwargs, so only used and pass-through ones are included
-        kwargs.pop("power_tol", 0)
+        kwargs.pop("power_tol", 0) # TODO: why to even remove them?
         kwargs.pop("power_maxiter", 0)
         kwargs.pop("power_eps", 0)
         kwargs.pop("sparse", 0)
@@ -210,12 +212,12 @@ def steadystate(A, c_ops=[], *, method='direct', solver=None, **kwargs):
     elif method == "propagator":
         rho_ss = _steadystate_expm(A, **kwargs)
     else:
-        raise ValueError(f"method {method} not supported.")
+        raise ValueError(f"method {method} not supported.") # TODO: validation can be performed automatically if we create an enumerator/model for supported solvers and methods
 
     return rho_ss
 
 
-def _steadystate_direct(A: Qobj, weight: float, **kw):
+def _steadystate_direct(A: Qobj, weight: float, **kw): # TODO: I'd suggest to expand the keyword arguments here too
     # Convert Dia to CSR for cleaner diagonal matrix representation:
     # without zeros or uninitialised padded elements, which is especially
     # relevant for multi-diagonal cases
@@ -226,18 +228,18 @@ def _steadystate_direct(A: Qobj, weight: float, **kw):
       # Calculate weight if not provided by user
       # (currently, no good dispatched function is available)
       if isinstance(A.data, _data.CSR):
-          weight = np.mean(np.abs(A.data.as_scipy().data))
+          weight = np.mean(np.abs(A.data.as_scipy().data)) # TODO: will be refactored to use mean_abs_nonzero. No need to check for data type!
       else:
-          A_np = np.abs(A.data.to_array())
+          A_np = np.abs(A.data.to_array()) # TODO: same refactoring
           weight = np.mean(A_np[A_np > 0])
 
     # Add weight to the Liouvillian
     # L[:, 0] = A[:, 0] + vectorized(eye * weight).T
     # L[:, 1:] = A[:, 1:]
     N = A.shape[0]
-    n = int(N**0.5)
+    n = int(N**0.5) # TODO: what is this parameter?
     dtype = type(A.data)
-    if dtype == _data.Dia:
+    if dtype == _data.Dia: # TODO: from this and similar checks (see above) I conclude the desired format is either CSR or Dense. This line is also redundant since there is Dia -> CSR conversion happening at the beginning.
         # Dia is bad at vector and missing optimization such as `use_wbm`.
         dtype = _data.CSR
     weight_vec = _data.column_stack(_data.diag([weight] * n, 0, dtype=dtype))
@@ -245,7 +247,7 @@ def _steadystate_direct(A: Qobj, weight: float, **kw):
     L = _data.block_overwrite(
         A.data, _data.add(first_row, weight_vec.transpose()), 0, 0, dtype=dtype
     )
-    b = _data.one_element[dtype]((N, 1), (0, 0), weight)
+    b = _data.one_element[dtype]((N, 1), (0, 0), weight) # TODO: What is the final equation this all gets composed into?
 
     # Permutation are part of scipy.sparse, thus only supported for CSR.
     if kw.pop("use_wbm", False):
@@ -253,27 +255,29 @@ def _steadystate_direct(A: Qobj, weight: float, **kw):
             L, b = _permute_wbm(L, b)
         else:
             warn("Only CSR matrices can be permuted.", RuntimeWarning)
-    use_rcm = False
+    use_rcm = False # TODO: this could be embedded into signature
     if kw.pop("use_rcm", False):
-        if isinstance(L, _data.CSR):
+        if isinstance(L, _data.CSR): # TODO: this means we always use permutation in case of CSR
             L, b, perm = _permute_rcm(L, b)
             use_rcm = True
         else:
             warn("Only CSR matrices can be permuted.", RuntimeWarning)
     if kw.pop("use_precond", False):
-        if isinstance(L, (_data.CSR, _data.Dia)):
-            kw["M"] = _compute_precond(L, kw)
+        if isinstance(L, (_data.CSR, _data.Dia)): # TODO: if we already converted Dia to CSR, the check for Dia is redundant
+            kw["M"] = _compute_precond(L, kw) # TODO: this means we always use preconditioners if the matrix is Dia or CSR. Hence, we cannot just convert Dia to CSR at the beginnning (which we do!)
+            # TODO: info is lacking on which solver "M" argument corresponds to
         else:
             warn("Only sparse solver use preconditioners.", RuntimeWarning)
 
     method = kw.pop("method", None)
     steadystate = _data.solve(L, b, method, options=kw)
 
-    if use_rcm:
+    if use_rcm: # TODO: will not be used for Dense
         steadystate = _reverse_rcm(steadystate, perm)
-
+    
+    # Density matrix
     rho_ss = _data.column_unstack(steadystate, n)
-    rho_ss = _data.add(rho_ss, rho_ss.adjoint()) * 0.5
+    rho_ss = _data.add(rho_ss, rho_ss.adjoint()) * 0.5 # TODO: for me: adjoint state is conjugate-transpose
 
     return Qobj(rho_ss, dims=A._dims[0].oper, isherm=True)
 
@@ -322,13 +326,13 @@ def _steadystate_expm(L, rho=None, propagator_tol=1e-5, propagator_T=10, **kw):
     )
 
 
-def _steadystate_power(A, **kw):
-    A += kw.pop("power_eps", 1e-15)
+def _steadystate_power(A, **kw): # TODO: type hints, expand kwargs
+    A += kw.pop("power_eps", 1e-15) # TODO: why does it get added
     L = A.data
     N = L.shape[1]
     y = _data.Dense([1]*N)
 
-    # Permutation are part of scipy.sparse, thus only supported for CSR.
+    # Permutation are part of scipy.sparse, thus only supported for CSR. # TODO: repeatable logic, same as in direct method
     if kw.pop("use_wbm", False):
         if isinstance(L, _data.CSR):
             L, y = _permute_wbm(L, y)
@@ -348,7 +352,7 @@ def _steadystate_power(A, **kw):
             warn("Only sparse solver use preconditioners.", RuntimeWarning)
 
     it = 0
-    maxiter = kw.pop("power_maxiter", 10)
+    maxiter = kw.pop("power_maxiter", 10) # TODO: think how to unpack all arguments with their default values more elegantly
     tol = kw.pop("power_tol", 1e-12)
     method = kw.pop("method", None)
     while it < maxiter and _data.norm.max(L @ y) > tol:
@@ -364,12 +368,12 @@ def _steadystate_power(A, **kw):
         y = _reverse_rcm(y, perm)
 
     rho_ss = Qobj(_data.column_unstack(y, N**0.5), dims=A._dims[0].oper)
-    rho_ss = rho_ss + rho_ss.dag()
+    rho_ss = rho_ss + rho_ss.dag() # TODO: for me: dag is Hermitian adjoint of the quantum object
     rho_ss = rho_ss / rho_ss.tr()
     rho_ss.isherm = True
     return rho_ss
 
-
+# TODO: somewhat of a doppelgaenger of steadystate function w.r.t. to arguments. It would also benefit from reusing some common structures (e.g. with information about solvers)
 def steadystate_floquet(H_0, c_ops, Op_t, w_d=1.0, n_it=3, sparse=False,
                         solver=None, **kwargs):
     """
@@ -460,7 +464,7 @@ def steadystate_floquet(H_0, c_ops, Op_t, w_d=1.0, n_it=3, sparse=False,
     M_subs = L_0 + L_m @ S + L_p @ T
     return steadystate(M_subs, solver=solver, **kwargs)
 
-
+# TODO: this function uses steadystate
 def pseudo_inverse(L, rhoss=None, w=None, method='splu', *, use_rcm=False,
                    **kwargs):
     """
@@ -535,7 +539,7 @@ def pseudo_inverse(L, rhoss=None, w=None, method='splu', *, use_rcm=False,
     sparse = kwargs.pop("sparse", False)
     if method == "direct":
         method = "splu" if sparse else "pinv"
-    sparse_solvers = ["splu", "mkl_spsolve", "spilu"]
+    sparse_solvers = ["splu", "mkl_spsolve", "spilu"] # TODO: can be refactored too in a more maintainable structure
     dense_solvers = ["solve", "lstsq", "pinv"]
     if isinstance(L.data, (_data.CSR, _data.Dia)) and method in dense_solvers:
         L = L.to("dense")
@@ -559,8 +563,8 @@ def pseudo_inverse(L, rhoss=None, w=None, method='splu', *, use_rcm=False,
 
     use_rcm = use_rcm and isinstance(L.data, _data.CSR)
 
-    if use_rcm:
-        perm = scipy.sparse.csgraph.reverse_cuthill_mckee(L.data.as_scipy())
+    if use_rcm: # If permutations should be used
+        perm = scipy.sparse.csgraph.reverse_cuthill_mckee(L.data.as_scipy()) # TODO: the method is mentioned in the paper by P. Nation
         A = _data.permute.indices(L.data, perm, perm)
         Q = _data.permute.indices(Q, perm, perm, dtype=_data.CSR)
     else:
