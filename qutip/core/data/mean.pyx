@@ -10,19 +10,21 @@ cdef extern from "<complex>" namespace "std":
 # This module is meant to be accessed by dot-access (e.g. mean.mean_csr).
 __all__ = []
 
-cpdef double complex mean_csr(CSR matrix) noexcept nogil:
+cpdef double complex mean_csr(CSR matrix) noexcept:
     cdef size_t nnz, ptr
     cdef double complex mean = 0
 
-    nnz = matrix.row_index[matrix.shape[0]]
+    nnz = matrix.row_index[matrix.shape[0]] # TODO: since close to zero values may be stored in CSR, filter them out and then think if it's a good solution
 
     if nnz == 0:
         return 0.0
 
     for ptr in range(nnz):
-        mean += matrix.data[ptr]
-    mean = mean / nnz
-    return mean
+        if np.testing.allclose(ptr, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol']):
+            continue
+        else:
+            mean += matrix.data[ptr]
+    return mean / nnz
 
 cdef inline int int_max(int a, int b) noexcept nogil:
     return a if a > b else b
@@ -56,7 +58,7 @@ cpdef double complex mean_dense(Dense matrix) noexcept:
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = matrix.data[ptr]
 
-        if np.isclose(cur, 0.0, atol=settings.core['atol']):
+        if np.testing.allclose(cur, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol'])):
             continue
         mean += cur
         nnz += 1
@@ -64,7 +66,7 @@ cpdef double complex mean_dense(Dense matrix) noexcept:
         return 0.0
     return mean / nnz
 
-cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
+cpdef double mean_abs_csr(CSR matrix) noexcept:
     cdef size_t nnz, ptr
     cdef double mean = 0
 
@@ -74,9 +76,11 @@ cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
         return 0.0
 
     for ptr in range(nnz):
-        mean += abs(matrix.data[ptr])
-    mean = mean / nnz
-    return mean
+        if np.testing.allclose(ptr, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol'])):
+            continue
+        else:
+            mean += abs(matrix.data[ptr])
+    return mean / nnz
 
 cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
     cdef int offset, diag, start, end, col=1
@@ -103,7 +107,7 @@ cpdef double mean_abs_dense(Dense matrix) noexcept:
     cdef double mean_abs = 0, cur
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = abs(matrix.data[ptr])
-        if np.isclose(cur, 0.0, atol=settings.core['atol']):
+        if np.testing.allclose(cur, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol'])):
             continue
         mean_abs += cur
         nnz += 1
