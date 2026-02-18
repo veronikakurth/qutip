@@ -75,7 +75,7 @@ cpdef double mean_abs_csr(CSR matrix) noexcept:
     if nnz == 0:
         return 0.0
 
-    for ptr in range(nnz):
+    for ptr in range(nnz): # TODO: given the automatic tidyup, is it possible that we get very small values in CSR due to precision errors? If not, would it be correct to fill out very small values - what if they are desirable?
         if np.isclose(ptr, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol']):
             continue
         else:
