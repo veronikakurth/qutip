@@ -20,7 +20,7 @@ cpdef double complex mean_csr(CSR matrix) noexcept:
         return 0.0
 
     for ptr in range(nnz):
-        if np.testing.allclose(ptr, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol']):
+        if np.isclose(ptr, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol']):
             continue
         else:
             mean += matrix.data[ptr]
@@ -58,7 +58,7 @@ cpdef double complex mean_dense(Dense matrix) noexcept:
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = matrix.data[ptr]
 
-        if np.testing.allclose(cur, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol'])):
+        if np.isclose(cur, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol']):
             continue
         mean += cur
         nnz += 1
@@ -76,7 +76,7 @@ cpdef double mean_abs_csr(CSR matrix) noexcept:
         return 0.0
 
     for ptr in range(nnz):
-        if np.testing.allclose(ptr, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol'])):
+        if np.isclose(ptr, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol']):
             continue
         else:
             mean += abs(matrix.data[ptr])
@@ -107,7 +107,7 @@ cpdef double mean_abs_dense(Dense matrix) noexcept:
     cdef double mean_abs = 0, cur
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = abs(matrix.data[ptr])
-        if np.testing.allclose(cur, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol'])):
+        if np.isclose(cur, 0.0, atol=settings.core['atol'], rtol=settings.core['rtol']):
             continue
         mean_abs += cur
         nnz += 1

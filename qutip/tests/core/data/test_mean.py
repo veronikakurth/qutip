@@ -45,7 +45,7 @@ class TestMean(testing.UnaryOpMixin):
         matrix = qt.Qobj(data).to(dtype).data
         result = op(matrix)
 
-        assert np.allclose(result, expected)
+        np.testing.assert_allclose(result, expected)
 
 
 class TestAbsMean(testing.UnaryOpMixin):
@@ -83,4 +83,4 @@ class TestAbsMean(testing.UnaryOpMixin):
         matrix = qt.Qobj(data).to(dtype).data
         result = op(matrix)
 
-        assert np.allclose(result, expected)
+        np.testing.assert_allclose(result, expected)
