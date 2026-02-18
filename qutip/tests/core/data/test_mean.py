@@ -10,6 +10,7 @@ from . import test_mathematics as testing
 
 
 class TestMean(testing.UnaryOpMixin):
+
     def op_numpy(self, matrix):
         atol = qt.settings.core["atol"]
 
@@ -20,7 +21,7 @@ class TestMean(testing.UnaryOpMixin):
         if nnz == 0:
             return 0.0
 
-        return matrix.sum() / nnz
+        return matrix[mask].sum() / nnz
 
     specialisations = [
         pytest.param(mean_csr, CSR, numbers.Complex),
@@ -39,7 +40,6 @@ class TestMean(testing.UnaryOpMixin):
                          [1.0, 2.0]], dtype=complex)
 
         mask = ~np.isclose(data, 0.0, atol=atol)
-
         expected = self.op_numpy(data[mask])
 
         matrix = qt.Qobj(data).to(dtype).data
