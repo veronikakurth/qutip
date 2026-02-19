@@ -59,7 +59,7 @@ class TestAbsMean(testing.UnaryOpMixin):
         if nnz == 0:
             return 0.0
 
-        return np.abs(matrix[mask].sum() / nnz)
+        return np.abs(matrix[mask]).sum() / nnz
 
     specialisations = [
         pytest.param(mean_abs_csr, CSR, numbers.Complex),
