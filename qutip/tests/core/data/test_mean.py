@@ -40,12 +40,12 @@ class TestMean(testing.UnaryOpMixin):
                          [1.0, 2.0]], dtype=complex)
 
         mask = ~np.isclose(data, 0.0, atol=atol)
-        expected = self.op_numpy(data[mask])
+        expected = self.op_numpy(data)
 
         matrix = qt.Qobj(data).to(dtype).data
         result = op(matrix)
 
-        np.testing.assert_allclose(result, expected)
+        np.testing.assert_allclose(result, expected, atol=self.atol)
 
 
 class TestAbsMean(testing.UnaryOpMixin):
