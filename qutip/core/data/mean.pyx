@@ -11,7 +11,7 @@ cdef extern from "<complex>" namespace "std":
 __all__ = []
 
 cpdef double complex mean_csr(CSR matrix) noexcept:
-    cdef size_t nnz, ptr
+    cdef size_t nnz, ptr, nnz_corrected = 0
     cdef double complex mean = 0
 
     nnz = matrix.row_index[matrix.shape[0]] # TODO: since close to zero values may be stored in CSR, filter them out and then think if it's a good solution
@@ -20,11 +20,15 @@ cpdef double complex mean_csr(CSR matrix) noexcept:
         return 0.0
 
     for ptr in range(nnz):
-        if np.isclose(ptr, 0.0, atol=settings.core['atol']):
+        if np.isclose(matrix.data[ptr], 0.0, atol=settings.core['atol']):
             continue
-        else:
-            mean += matrix.data[ptr]
-    return mean / nnz
+        mean += matrix.data[ptr]
+        nnz_corrected += 1
+
+    if nnz_corrected == 0:
+        return 0.0
+
+    return mean / nnz_corrected
 
 cdef inline int int_max(int a, int b) noexcept nogil:
     return a if a > b else b
@@ -55,6 +59,7 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
 cpdef double complex mean_dense(Dense matrix) noexcept:
     cdef size_t ptr, nnz = 0
     cdef double complex mean = 0, cur
+
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = matrix.data[ptr]
 
@@ -62,6 +67,7 @@ cpdef double complex mean_dense(Dense matrix) noexcept:
             continue
         mean += cur
         nnz += 1
+
     if nnz == 0:
         return 0.0
     return mean / nnz
