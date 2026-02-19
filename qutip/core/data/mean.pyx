@@ -73,7 +73,7 @@ cpdef double complex mean_dense(Dense matrix) noexcept:
     return mean / nnz
 
 cpdef double mean_abs_csr(CSR matrix) noexcept:
-    cdef size_t nnz, ptr
+    cdef size_t nnz, ptr, nnz_corrected = 0
     cdef double mean = 0
 
     nnz = matrix.row_index[matrix.shape[0]]
@@ -82,10 +82,15 @@ cpdef double mean_abs_csr(CSR matrix) noexcept:
         return 0.0
 
     for ptr in range(nnz): # TODO: given the automatic tidyup, is it possible that we get very small values in CSR due to precision errors? If not, would it be correct to fill out very small values - what if they are desirable?
-        if np.isclose(ptr, 0.0, atol=settings.core['atol']):
+        if np.isclose(matrix.data[ptr], 0.0, atol=settings.core['atol']):
             continue
         else:
             mean += abs(matrix.data[ptr])
+            nnz_corrected += 1
+
+    if nnz_corrected == 0:
+        return 0.0
+
     return mean / nnz
 
 cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
