@@ -15,6 +15,10 @@ __all__ = []
 cpdef double complex mean_csr(CSR matrix) noexcept nogil:
     cdef size_t nnz, ptr, nnz_corrected = 0
     cdef double complex mean = 0
+    cdef double atol
+
+    with gil:
+        atol = settings.core['atol']
 
     nnz = matrix.row_index[matrix.shape[0]] # TODO: since close to zero values may be stored in CSR, filter them out and then think if it's a good solution
 
@@ -22,7 +26,7 @@ cpdef double complex mean_csr(CSR matrix) noexcept nogil:
         return 0.0
 
     for ptr in range(nnz):
-        if isclose(matrix.data[ptr], atol=settings.core['atol']):
+        if isclose(matrix.data[ptr], atol=atol):
             continue
         mean += matrix.data[ptr]
         nnz_corrected += 1
@@ -42,6 +46,10 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
     cdef int offset, diag, start, end, col=1
     cdef double complex mean = 0
     cdef size_t nnz = 0
+    cdef double atol
+
+    with gil:
+        atol = settings.core['atol']
 
     for diag in range(matrix.num_diag):
         offset = matrix.offsets[diag]
@@ -52,10 +60,11 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
 
         for col in range(start, end):
             cur_el = matrix.data[diag * matrix.shape[1] + col]
-            if isclose(cur_el, atol=settings.core['atol']):
+            if isclose(cur_el, atol=atol):
                 continue
             mean += cur_el
             nnz += 1
+
     if nnz == 0:
         return 0.0
     return mean / nnz
@@ -64,11 +73,15 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
 cpdef double complex mean_dense(Dense matrix) noexcept nogil:
     cdef size_t ptr, nnz = 0
     cdef double complex mean = 0, cur
+    cdef double atol
+
+    with gil:
+        atol = settings.core['atol']
 
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = matrix.data[ptr]
 
-        if isclose(cur, atol=settings.core['atol']):
+        if isclose(cur, atol=atol):
             continue
         mean += cur
         nnz += 1
@@ -80,6 +93,10 @@ cpdef double complex mean_dense(Dense matrix) noexcept nogil:
 cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
     cdef size_t nnz, ptr, nnz_corrected = 0
     cdef double mean = 0
+    cdef double atol
+
+    with gil:
+        atol = settings.core['atol']
 
     nnz = matrix.row_index[matrix.shape[0]]
 
@@ -87,7 +104,7 @@ cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
         return 0.0
 
     for ptr in range(nnz):
-        if isclose(matrix.data[ptr], atol=settings.core['atol']):
+        if isclose(matrix.data[ptr], atol=atol):
             continue
         else:
             mean += abs(matrix.data[ptr])
@@ -102,6 +119,10 @@ cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
     cdef int offset, diag, start, end, col=1
     cdef double mean_abs = 0
     cdef size_t nnz = 0
+    cdef double atol
+
+    with gil:
+        atol = settings.core['atol']
 
     for diag in range(matrix.num_diag):
         offset = matrix.offsets[diag]
@@ -113,7 +134,7 @@ cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
 
         for col in range(start, end):
             cur_el = matrix.data[diag * matrix.shape[1] + col]
-            if isclose(cur_el, atol=settings.core['atol']):
+            if isclose(cur_el, atol=atol):
                 continue
             mean_abs += abs(matrix.data[diag * matrix.shape[1] + col])
             nnz += 1
@@ -124,9 +145,14 @@ cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
 cpdef double mean_abs_dense(Dense matrix) noexcept nogil:
     cdef size_t ptr, nnz = 0
     cdef double mean_abs = 0, cur
+    cdef double atol
+
+    with gil:
+        atol = settings.core['atol']
+    
     for ptr in range(matrix.shape[0] * matrix.shape[1]):
         cur = abs(matrix.data[ptr])
-        if isclose(cur, atol=settings.core['atol']):
+        if isclose(cur, atol=atol):
             continue
         mean_abs += cur
         nnz += 1
