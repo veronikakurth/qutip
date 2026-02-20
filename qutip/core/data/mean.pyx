@@ -9,12 +9,26 @@ cdef extern from "<complex>" namespace "std":
 cdef inline bint isclose(double complex z, double atol) nogil:
     return abs(z.real) <= atol and abs(z.imag) <= atol
 
+cdef inline int int_max(int a, int b) noexcept nogil:
+    return a if a > b else b
+
+cdef inline int int_min(int a, int b) noexcept nogil:
+    return a if a < b else b
+
+cdef double complex _mean_generic(double complex* data, size_t start, size_t end, double atol) noexcept nogil:
+    cdef size_t i, count = 0
+    cdef double complex total = 0
+
+    for i in range(start, end):
+        if not isclose(data[i], atol):
+            total += data[i]
+            count += 1
+    return total / count if count > 0 else 0.0
+
 # This module is meant to be accessed by dot-access (e.g. mean.mean_csr).
 __all__ = []
 
 cpdef double complex mean_csr(CSR matrix) noexcept nogil:
-    cdef size_t nnz, ptr, nnz_corrected = 0
-    cdef double complex mean = 0
     cdef double atol
 
     with gil:
@@ -25,22 +39,7 @@ cpdef double complex mean_csr(CSR matrix) noexcept nogil:
     if nnz == 0:
         return 0.0
 
-    for ptr in range(nnz):
-        if isclose(matrix.data[ptr], atol=atol):
-            continue
-        mean += matrix.data[ptr]
-        nnz_corrected += 1
-
-    if nnz_corrected == 0:
-        return 0.0
-
-    return mean / nnz_corrected
-
-cdef inline int int_max(int a, int b) noexcept nogil:
-    return a if a > b else b
-
-cdef inline int int_min(int a, int b) noexcept nogil:
-    return a if a < b else b
+    return _mean_generic(matrix.data, 0, nnz, atol)
 
 cpdef double complex mean_dia(Dia matrix) noexcept nogil:
     cdef int offset, diag, start, end, col=1
@@ -64,11 +63,10 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
                 continue
             mean += cur_el
             nnz += 1
-
+    
     if nnz == 0:
         return 0.0
     return mean / nnz
-
 
 cpdef double complex mean_dense(Dense matrix) noexcept nogil:
     cdef size_t ptr, nnz = 0
