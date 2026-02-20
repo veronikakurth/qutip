@@ -39,10 +39,9 @@ class TestMean(testing.UnaryOpMixin):
         data = np.array([[0.0, atol * scale],
                          [1.0, 2.0]], dtype=complex)
 
-        mask = ~np.isclose(data, 0.0, atol=atol)
         expected = self.op_numpy(data)
 
-        matrix = qt.Qobj(data).to(dtype).data
+        matrix = qt.Qobj(data, dtype=dtype).data
         result = op(matrix)
 
         np.testing.assert_allclose(result, expected, atol=self.atol)
@@ -76,11 +75,9 @@ class TestAbsMean(testing.UnaryOpMixin):
 
         data = np.array([[0.0, atol * scale],
                          [1.0, 2.0]], dtype=complex)
-        mask = ~np.isclose(data, 0.0, atol=atol)
+        expected = self.op_numpy(data)
 
-        expected = self.op_numpy(data[mask])
-
-        matrix = qt.Qobj(data).to(dtype).data
+        matrix = qt.Qobj(data, dtype=dtype).data
         result = op(matrix)
 
         np.testing.assert_allclose(result, expected)
