@@ -36,7 +36,7 @@ cdef inline int int_max(int a, int b) noexcept nogil:
 cdef inline int int_min(int a, int b) noexcept nogil:
     return a if a < b else b
 
-cpdef double complex mean_dia(Dia matrix) noexcept nogil:
+cpdef double complex mean_dia(Dia matrix) noexcept:
     cdef int offset, diag, start, end, col=1
     cdef double complex mean = 0
     cdef size_t nnz = 0
@@ -49,7 +49,10 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
             continue
 
         for col in range(start, end):
-            mean += matrix.data[diag * matrix.shape[1] + col]
+            cur_el = matrix.data[diag * matrix.shape[1] + col]
+            if np.isclose(cur_el, 0.0, atol=settings.core['atol']):
+                continue
+            mean += cur_el
             nnz += 1
     if nnz == 0:
         return 0.0
@@ -91,9 +94,9 @@ cpdef double mean_abs_csr(CSR matrix) noexcept:
     if nnz_corrected == 0:
         return 0.0
 
-    return mean / nnz
+    return mean / nnz_corrected
 
-cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
+cpdef double mean_abs_dia(Dia matrix) noexcept:
     cdef int offset, diag, start, end, col=1
     cdef double mean_abs = 0
     cdef size_t nnz = 0
@@ -107,6 +110,9 @@ cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
             continue
 
         for col in range(start, end):
+            cur_el = matrix.data[diag * matrix.shape[1] + col]
+            if np.isclose(cur_el, 0.0, atol=settings.core['atol']):
+                continue
             mean_abs += abs(matrix.data[diag * matrix.shape[1] + col])
             nnz += 1
     if nnz == 0:
