@@ -25,6 +25,16 @@ cdef double complex _mean_generic(double complex* data, size_t start, size_t end
             count += 1
     return total / count if count > 0 else 0.0
 
+cdef double _mean_abs_generic(double complex* data, size_t start, size_t end, double atol) noexcept nogil:
+    cdef size_t i, count = 0
+    cdef double total = 0
+
+    for i in range(start, end):
+        if not isclose(data[i], atol):
+            total += abs(data[i])
+            count += 1
+    return total / count if count > 0 else 0.0
+
 # This module is meant to be accessed by dot-access (e.g. mean.mean_csr).
 __all__ = []
 
@@ -34,7 +44,7 @@ cpdef double complex mean_csr(CSR matrix) noexcept nogil:
     with gil:
         atol = settings.core['atol']
 
-    nnz = matrix.row_index[matrix.shape[0]] # TODO: since close to zero values may be stored in CSR, filter them out and then think if it's a good solution
+    nnz = matrix.row_index[matrix.shape[0]]
 
     if nnz == 0:
         return 0.0
@@ -70,23 +80,12 @@ cpdef double complex mean_dia(Dia matrix) noexcept nogil:
 
 cpdef double complex mean_dense(Dense matrix) noexcept nogil:
     cdef size_t ptr, nnz = 0
-    cdef double complex mean = 0, cur
     cdef double atol
 
     with gil:
         atol = settings.core['atol']
 
-    for ptr in range(matrix.shape[0] * matrix.shape[1]):
-        cur = matrix.data[ptr]
-
-        if isclose(cur, atol=atol):
-            continue
-        mean += cur
-        nnz += 1
-
-    if nnz == 0:
-        return 0.0
-    return mean / nnz
+    return _mean_generic(matrix.data, 0, matrix.shape[0] * matrix.shape[1], atol)
 
 cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
     cdef size_t nnz, ptr, nnz_corrected = 0
@@ -101,17 +100,7 @@ cpdef double mean_abs_csr(CSR matrix) noexcept nogil:
     if nnz == 0:
         return 0.0
 
-    for ptr in range(nnz):
-        if isclose(matrix.data[ptr], atol=atol):
-            continue
-        else:
-            mean += abs(matrix.data[ptr])
-            nnz_corrected += 1
-
-    if nnz_corrected == 0:
-        return 0.0
-
-    return mean / nnz_corrected
+    return _mean_abs_generic(matrix.data, 0, nnz, atol)
 
 cpdef double mean_abs_dia(Dia matrix) noexcept nogil:
     cdef int offset, diag, start, end, col=1
@@ -148,15 +137,7 @@ cpdef double mean_abs_dense(Dense matrix) noexcept nogil:
     with gil:
         atol = settings.core['atol']
     
-    for ptr in range(matrix.shape[0] * matrix.shape[1]):
-        cur = abs(matrix.data[ptr])
-        if isclose(cur, atol=atol):
-            continue
-        mean_abs += cur
-        nnz += 1
-    if nnz == 0:
-        return 0.0
-    return mean_abs / nnz
+    return _mean_abs_generic(matrix.data, 0, matrix.shape[0] * matrix.shape[1], atol)
 
 from .dispatch import Dispatcher as _Dispatcher
 import inspect as _inspect
