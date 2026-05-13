@@ -137,7 +137,8 @@ jobs:
         if: matrix.os != 'windows-11-arm'
         # Currently miniconda doesn't support window-11 arms
         with:
-          auto-update-conda: true
+          activate-environment: test
+          auto-activate-base: false
           python-version: ${{ matrix.python-version }}
           channels: ${{ matrix.condaforge == 1 && 'conda-forge' || 'defaults' }}
 
