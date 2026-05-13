@@ -147,7 +147,14 @@ jobs:
         if: matrix.os == 'windows-11-arm'
         with:
           python-version: ${{ matrix.python-version }}
-
+      - name: Debug environment
+        run: |
+          which python
+          python --version
+          which pip || true
+          python -m pip --version
+          echo $PATH
+          conda info
       - name: Install QuTiP and dependencies
         # In the run, first we handle any special cases.  We do this in bash
         # rather than in the GitHub Actions file directly, because bash gives us
