@@ -10,6 +10,7 @@ import scipy
 import numpy as np
 
 from qutip.core.data cimport CSR, Dense, csr, Data, Dia
+from qutip.core.data._blas_int cimport blas_int
 
 from qutip.core.data.adjoint cimport adjoint_csr, adjoint_dense
 from qutip.core.data.matmul cimport matmul_csr
@@ -34,14 +35,14 @@ cdef double abssq(double complex x) nogil:
 __all__ = []
 
 cpdef double one_csr(CSR matrix) except -1:
-    cdef int n=matrix.shape[1], inc=1
+    cdef blas_int n=matrix.shape[1], inc=1
     cdef size_t ptr
     cdef double *col = <double *> PyMem_Calloc(matrix.shape[1], sizeof(double))
     try:
         for ptr in range(csr.nnz(matrix)):
             col[matrix.col_index[ptr]] += abs(matrix.data[ptr])
         # BLAS is a Fortran library, so it's one-indexed of course...
-        return col[blas.idamax(&n, col, &inc) - 1]
+        return col[blas.idamax(&n, col, &inc) - 1] # the return type of blas.idamax is now blas_int
     finally:
         mem.PyMem_Free(col)
 

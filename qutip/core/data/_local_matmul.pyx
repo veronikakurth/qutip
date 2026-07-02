@@ -1,6 +1,7 @@
 #cython: language_level=3
 
 from qutip.core.data cimport Data, Dense, dense, Dia, CSR
+from qutip.core.data._blas_int cimport blas_int
 from qutip.core.data.matmul cimport (
     imatmul_data_dense, matmul_dense, matmul_dense_dia_dense
 )
@@ -22,7 +23,7 @@ __all__ = [
 ]
 
 
-cdef int ONE = 1
+cdef blas_int ONE = 1
 cdef double NaN = np.nan
 
 
@@ -363,7 +364,7 @@ cpdef void n_mode_kernel(
     out_row_stride = 1 if out.fortran else out.shape[1]
     out_col_stride = 1 if not out.fortran else out.shape[0]
 
-    cdef int chunk_len = meta.pass_through_step
+    cdef blas_int chunk_len = meta.pass_through_step
     if not state.fortran and not out.fortran:
         chunk_len *= state.shape[1]
 

@@ -8,6 +8,7 @@ cimport cython
 import warnings
 
 from qutip.core.data.base cimport idxint
+from qutip.core.data._blas_int cimport blas_int, blas_bint
 from qutip.core.data cimport csr, dense, CSR, Dense, Data, Dia
 
 __all__ = [
@@ -102,11 +103,13 @@ cpdef Dense column_stack_dense(Dense matrix, bint inplace=False):
         warnings.warn("cannot stack columns inplace for C-ordered matrix")
     out = dense.zeros(matrix.shape[0] * matrix.shape[1], 1)
     cdef idxint col
-    cdef int ONE=1
-    for col in range(matrix.shape[1]):
+    cdef blas_int ONE=1
+    cdef blas_int nrows = matrix.shape[0]
+    cdef blas_int row_stride = matrix.shape[1]
+    for col in range(row_stride):
         blas.zcopy(
-            &matrix.shape[0],
-            &matrix.data[col], &matrix.shape[1],
+            &nrows,
+            &matrix.data[col], &row_stride,
             &out.data[col * matrix.shape[0]], &ONE
         )
     return out

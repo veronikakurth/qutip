@@ -36,6 +36,7 @@ from qutip.core.data.adjoint import adjoint_dia, transpose_dia, conj_dia
 from qutip.core.data.trace import trace_dia
 from qutip.core.data.tidyup import tidyup_dia
 from .base import idxint_dtype
+from qutip.core.data._blas_int cimport blas_int, blas_bint
 from qutip.settings import settings
 
 cnp.import_array()
@@ -382,7 +383,7 @@ cpdef Dia clean_dia(Dia matrix, bint inplace=False):
     cdef base.idxint diag=0, new_diag=0, start, end, col
     cdef double complex zONE=1.
     cdef bint has_duplicate
-    cdef int length=out.shape[1], ONE=1
+    cdef blas_int length=out.shape[1], ONE=1
 
     if out.num_diag == 0:
         return out
