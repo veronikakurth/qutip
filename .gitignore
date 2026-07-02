@@ -27,6 +27,8 @@ qutip/version.py
 qutip/__config__.py
 rhs*.pyx
 
+qutip/core/data/_blas_int.pxd
+
 qutip/cy/*.c
 *.cpp
 !qutip/core/data/src/*.cpp
