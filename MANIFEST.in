@@ -10,3 +10,8 @@ recursive-include qutip *.hpp
 recursive-include qutip *.cpp
 recursive-include qutip *.ini
 recursive-include qutip *.h
+
+# Generated at build time by setup.py from the build environment's SciPy/idxint
+# settings; must NOT be shipped, or downstream builds freeze to this machine's ABI.
+exclude qutip/core/data/_blas_int.pxd
+exclude qutip/core/data/src/intdtype.h
