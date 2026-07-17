@@ -103,10 +103,12 @@ cpdef Dense column_stack_dense(Dense matrix, bint inplace=False):
     out = dense.zeros(matrix.shape[0] * matrix.shape[1], 1)
     cdef idxint col
     cdef int ONE=1
+    cdef int nrows = matrix.shape[0]
+    cdef int ncols = matrix.shape[1]
     for col in range(matrix.shape[1]):
         blas.zcopy(
-            &matrix.shape[0],
-            &matrix.data[col], &matrix.shape[1],
+            &nrows,
+            &matrix.data[col], &ncols,
             &out.data[col * matrix.shape[0]], &ONE
         )
     return out

@@ -13,7 +13,7 @@ __all__ = [
 
 cpdef CSR imul_csr(CSR matrix, double complex value):
     """Multiply this CSR `matrix` by a complex scalar `value`."""
-    cdef idxint l = csr.nnz(matrix)
+    cdef int l = csr.nnz(matrix)
     cdef int ONE=1
     zscal(&l, &value, matrix.data, &ONE)
     return matrix
@@ -41,7 +41,7 @@ cpdef CSR neg_csr(CSR matrix):
 
 cpdef Dia imul_dia(Dia matrix, double complex value):
     """Multiply this Dia `matrix` by a complex scalar `value`."""
-    cdef idxint l = matrix.num_diag * matrix.shape[1]
+    cdef int l = matrix.num_diag * matrix.shape[1]
     cdef int ONE=1
     zscal(&l, &value, matrix.data, &ONE)
     return matrix
@@ -74,7 +74,7 @@ cpdef Dense imul_dense(Dense matrix, double complex value):
     """Multiply this Dense `matrix` by a complex scalar `value`."""
     cdef size_t ptr
     cdef int ONE=1
-    cdef idxint l = matrix.shape[0]*matrix.shape[1]
+    cdef int l = matrix.shape[0]*matrix.shape[1]
     zscal(&l, &value, matrix.data, &ONE)
     return matrix
 
