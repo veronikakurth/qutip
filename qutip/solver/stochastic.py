@@ -648,6 +648,10 @@ class StochasticSolver(MultiTrajSolver):
             raise ValueError("c_ops are not supported by ssesolve.")
 
         rhs = _StochasticRHS(self._open, H, sc_ops, c_ops, heterodyne)
+        # H must be an operator (enforced by _StochasticRHS). SME density
+        # matrices stay Hermitian under that construction; SSE uses kets so
+        # isherm stays false regardless of this flag.
+        self._rhs_preserves_hermiticity = True
         super().__init__(rhs, options=options)
 
         if heterodyne:
@@ -1034,6 +1038,21 @@ class StochasticSolver(MultiTrajSolver):
         if raw_data:
             return _DataFeedback(default, open=cls._open)
         return _QobjFeedback(default, open=cls._open)
+
+    def _get_integrator(self):
+        """ Return the initialted integrator. """
+        _time_start = time()
+        method = self._options["method"]
+        if method in self.avail_integrators():
+            integrator = self.avail_integrators()[method]
+        elif issubclass(method, Integrator):
+            integrator = method
+        else:
+            raise ValueError("Integrator method not supported.")
+        integrator_instance = integrator(self.rhs, self.options)
+
+        self._init_integrator_time = time() - _time_start
+        return integrator_instance
 
 
 class SMESolver(StochasticSolver):
