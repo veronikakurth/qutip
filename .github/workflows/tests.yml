@@ -32,7 +32,7 @@ jobs:
         os: [ubuntu-latest]
         # Test other versions of Python in special cases to avoid exploding the
         # matrix size; make sure to test all supported versions in some form.
-        python-version: ["3.14"]
+        python-version: ["3.15"]
         case-name: ["Latest"]
         numpy-build: [""]
         scipy-build: [""]
