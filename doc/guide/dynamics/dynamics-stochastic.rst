@@ -309,6 +309,12 @@ The stochastic solvers share many features with :func:`.mcsolve`, such as
 end conditions, seed control and running in parallel. See the sections
 :ref:`monte-ntraj`, :ref:`monte-seeds` and :ref:`monte-parallel` for details.
 
+When using time-dependent coefficient functions with ``map="parallel"``, the
+functions must be picklable. Lambda expressions and nested functions are not
+supported by this backend. Use named functions in an importable module, string
+coefficients, or ``map="loky"`` for lambdas and interactively defined functions.
+See :ref:`monte-parallel` for examples and installation details.
+
 .. plot::
     :context: reset
     :include-source: false

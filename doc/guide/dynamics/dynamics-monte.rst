@@ -467,6 +467,70 @@ The ``"mpi"`` option is for computing trajectories in a computing cluster, see t
     >>> np.allclose(res_par.average_expect, res_ser.average_expect)
     True
 
+Time-dependent Hamiltonians and collapse operators can also be used when running
+trajectories in parallel. With ``map="parallel"``, the solver and the objects
+passed to worker processes must be serializable using Python's
+`pickle <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
+This includes coefficient functions, their arguments and expectation-value
+callbacks. In particular, lambda expressions and functions defined inside other
+functions cannot be used with this backend.
+
+For function coefficients with ``map="parallel"``, define a named function at
+the top level of an importable Python module. For example, save the following as
+``drive.py``:
+
+.. code-block:: python
+
+    import numpy as np
+
+    def drive(t, eps):
+        return eps * np.sin(t)
+
+Then import it in a script and run the solver:
+
+.. code-block:: python
+
+    import numpy as np
+    import qutip as qt
+    from drive import drive
+
+    if __name__ == "__main__":
+        a = qt.destroy(5)
+        H = [qt.num(5), [a + a.dag(), drive]]
+        result = qt.mcsolve(
+            H, qt.basis(5, 0), np.linspace(0, 1, 21), [a],
+            e_ops=[qt.num(5)], args={"eps": 0.1}, ntraj=10,
+            options={"map": "parallel", "num_cpus": 2},
+        )
+
+The ``if __name__ == "__main__":`` guard prevents the solver from being run
+again when worker processes import the script on platforms that use the
+``spawn`` start method. Replacing a lambda with a named function in a notebook
+does not make it importable by workers on all platforms.
+
+For lambdas or functions defined interactively, use ``map="loky"`` instead.
+The optional ``loky`` package can be installed with ``pip install loky``. It uses
+``cloudpickle`` to serialize these functions. For example, in a notebook:
+
+.. code-block:: python
+
+    import numpy as np
+    import qutip as qt
+
+    a = qt.destroy(5)
+    H = [qt.num(5), [a + a.dag(), lambda t, eps: eps * np.sin(t)]]
+    result = qt.mcsolve(
+        H, qt.basis(5, 0), np.linspace(0, 1, 21), [a],
+        e_ops=[qt.num(5)], args={"eps": 0.1}, ntraj=10,
+        options={"map": "loky", "num_cpus": 2},
+    )
+
+String coefficients are another option for simple expressions. For example,
+``H = [qt.num(5), [a + a.dag(), "eps * sin(t)"]]`` can be used with
+``map="parallel"`` and ``args={"eps": 0.1}``.
+These serialization requirements and alternatives also apply to
+:func:`.smesolve` and :func:`.ssesolve`.
+
 Note that when running in parallel, the order in which the trajectories are added
 to the result can differ. Therefore
 
