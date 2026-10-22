@@ -17,8 +17,6 @@ from qutip.settings import available_cpu_count
 
 mp_context = multiprocessing.get_context()
 
-print("Debugging: multiprocessing context is", mp_context)
-
 default_map_kw = {
     'timeout': threading.TIMEOUT_MAX,
     'num_cpus': available_cpu_count(),
@@ -310,9 +308,10 @@ def parallel_map(task, values, task_args=None, task_kwargs=None,
         try:
             import loky
         except ImportError:
-            print("Interactive session detected, but loky is unavailable. "
+            warnings.warn("Interactive session detected, but loky is unavailable. "
                 "Continuing with multiprocessing; notebook-defined "
-                "functions may fail to serialize.")
+                "functions may fail to serialize.",
+                RuntimeWarning, stacklevel=2)
         else:
             return loky_pmap(
                 task,
