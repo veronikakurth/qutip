@@ -179,6 +179,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Show Python and pip versions
+        run: |
+          python --version
+          python -m pip --version
+
       # Meson, unlike setuptools/distutils, does not locate and activate the
       # MSVC toolchain itself: it simply looks for cl.exe and link.exe in PATH.
       # This writes the result to GITHUB_ENV, so every later step inherits it.
@@ -212,6 +217,8 @@ jobs:
           else
             source ./build_env/bin/activate
           fi
+          python --version
+          python -m pip --version
           cd qutip
           python -m pip install meson-python meson ninja # build
           python -m pip install "cython${{ matrix.cython-build }}"
@@ -224,6 +231,8 @@ jobs:
       - name: Install QuTiP and dependencies
         working-directory: ${{ runner.temp }}
         run: |
+          python --version
+          python -m pip --version
           # Install the extra requirement
           python -m pip install pytest pytest-rerunfailures
           python -m pip install pytest-cov coveralls pytest-fail-slow
@@ -336,6 +345,8 @@ jobs:
         run: |
           python -m venv towncrier_check
           source towncrier_check/bin/activate
+          python --version
+          python -m pip --version
           python -m pip install towncrier
 
       - name: Verify Towncrier entry added
@@ -361,5 +372,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}
         run: |
+          python --version
+          python -m pip --version
           python -m pip install coveralls
           coveralls --service=github --finish

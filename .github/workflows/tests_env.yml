@@ -33,6 +33,11 @@ jobs:
           auto-update-conda: true
           python-version: 3.11
 
+      - name: Show Python and pip versions
+        run: |
+          python --version
+          python -m pip --version
+
       - name: Install QuTiP and dependencies
         run: |
           python -m pip install .[runtime_compilation] --group tests -v
