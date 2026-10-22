@@ -15,15 +15,7 @@ import warnings
 from qutip.ui.progressbar import progress_bars
 from qutip.settings import available_cpu_count
 
-if sys.platform == 'darwin':
-    mp_context = multiprocessing.get_context('fork')
-elif sys.platform == 'linux':
-    # forkserver would handle threads better, but is much slower at starting
-    # the executor and spawning tasks
-    mp_context = multiprocessing.get_context('fork')
-else:
-    mp_context = multiprocessing.get_context()
-
+mp_context = multiprocessing.get_context()
 
 default_map_kw = {
     'timeout': threading.TIMEOUT_MAX,
@@ -273,6 +265,9 @@ def parallel_map(task, values, task_args=None, task_kwargs=None,
 
         result = [task(value, *task_args, **task_kwargs) for value in values]
 
+    In interactive sessions, use :func:`loky_pmap` when loky is available.
+    Otherwise, warn and continue with multiprocessing.
+
     Parameters
     ----------
     task : a Python function
@@ -309,7 +304,26 @@ def parallel_map(task, values, task_args=None, task_kwargs=None,
         list will be returned.
 
     """
-
+    if _interactive_backend_active():
+        try:
+            import loky
+        except ImportError:
+            pass
+            # warnings.warn("Interactive session detected, but loky is unavailable. "
+            #     "Continuing with multiprocessing; notebook-defined "
+            #     "functions may fail to serialize.",
+            #     RuntimeWarning, stacklevel=2)
+        else:
+            return loky_pmap(
+                task,
+                values,
+                task_args=task_args,
+                task_kwargs=task_kwargs,
+                reduce_func=reduce_func,
+                map_kw=map_kw,
+                progress_bar=progress_bar,
+                progress_bar_kwargs=progress_bar_kwargs,
+            )
     map_kw = _read_map_kw(map_kw)
     ctx_kw = {"mp_context": mp_context}
 
@@ -548,6 +562,16 @@ _maps = {
 }
 
 
+
+def _interactive_backend_active():
+    main_module = sys.modules["__main__"]
+    main_file = getattr(main_module, "__file__", None)
+
+    return (
+        main_file is None
+        or main_file.startswith("<")
+        or not os.path.isfile(main_file)
+    )
 def _get_map(options):
     map_func = _maps[options['map']]
 
