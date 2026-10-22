@@ -308,10 +308,11 @@ def parallel_map(task, values, task_args=None, task_kwargs=None,
         try:
             import loky
         except ImportError:
-            warnings.warn("Interactive session detected, but loky is unavailable. "
-                "Continuing with multiprocessing; notebook-defined "
-                "functions may fail to serialize.",
-                RuntimeWarning, stacklevel=2)
+            pass
+            # warnings.warn("Interactive session detected, but loky is unavailable. "
+            #     "Continuing with multiprocessing; notebook-defined "
+            #     "functions may fail to serialize.",
+            #     RuntimeWarning, stacklevel=2)
         else:
             return loky_pmap(
                 task,
