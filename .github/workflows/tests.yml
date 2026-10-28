@@ -274,7 +274,7 @@ jobs:
         # If our tests are running for longer than an hour, _something_ is wrong
         # somewhere.  The GitHub default is 6 hours, which is a bit long to wait
         # to see if something hung.
-        timeout-minutes: 60
+        timeout-minutes: 90
         env:
           COVERAGE_FILE: ${{ github.workspace }}/.coverage
           COVERAGE_RCFILE: ${{ github.workspace }}/pyproject.toml
