@@ -308,7 +308,8 @@ def parallel_map(task, values, task_args=None, task_kwargs=None,
             "parallel_map is not available on emscripten, use serial_map")
 
     map_kw = _read_map_kw(map_kw)
-    settings.mp_context = multiprocessing.get_context('fork')
+    if sys.platform in ("darwin", "linux"):
+        settings.mp_context = multiprocessing.get_context('fork')
     ctx_kw = {"mp_context": settings.mp_context}
     def setup_executor():
         return concurrent.futures.ProcessPoolExecutor(
