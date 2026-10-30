@@ -52,6 +52,9 @@ jobs:
           - case-name: MPI, version-1
             os: ubuntu-latest
             python-version: "3.13"
+            # Dump parent-process thread stacks on hangs and show fixture phases
+            # so the last PASSED line is not mistaken for the stuck operation.
+            pytest-extra-options: "-o faulthandler_timeout=60 --setup-show"
             numpy-run: "==2.4.*"
             scipy-run: "==1.17.*"
             pypi: 1
@@ -269,6 +272,27 @@ jobs:
           python -c "import qutip; qutip.about()"
           python -c "import qutip; print(qutip.settings)"
 
+      - name: MPI debugging information
+        if: matrix.case-name == 'MPI, version-1'
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -VV
+          mpiexec --version
+          python - <<'PY'
+          import multiprocessing
+          import sys
+          from importlib.metadata import version
+          from mpi4py import MPI
+
+          print("Python executable:", sys.executable, flush=True)
+          for package in ("mpi4py", "loky", "pytest", "pytest-cov"):
+              print(f"{package}: {version(package)}", flush=True)
+          print("MPI library:", MPI.Get_library_version(), flush=True)
+          print("MPI thread support:", MPI.Query_thread(), flush=True)
+          print("Default multiprocessing start method:",
+                multiprocessing.get_start_method(), flush=True)
+          PY
+
       - name: Run tests
         working-directory: ${{ runner.temp }}
         # If our tests are running for longer than an hour, _something_ is wrong
@@ -301,8 +325,10 @@ jobs:
           #  --strict-markers
           #     error out if a marker is used but not defined in the
           #     configuration file
-          #  --timeout=300
-          #     error any individual test that goes longer than the given time
+          #  --fail-slow=300
+          #     fail slow tests after completion; this does not interrupt hangs
+          #  -o faulthandler_timeout=60 --setup-show (MPI case only)
+          #     dump pytest thread stacks after 60 seconds and log fixture phases
           #  --durations=0 --durations-min=1.0
           #     at the end, show a list of all the tests that took longer than a
           #     second to run
