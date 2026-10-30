@@ -293,6 +293,59 @@ jobs:
                 multiprocessing.get_start_method(), flush=True)
           PY
 
+      - name: Isolate MPI backend transitions
+        if: matrix.case-name == 'MPI, version-1'
+        working-directory: ${{ runner.temp }}
+        timeout-minutes: 18
+        env:
+          COVERAGE_RCFILE: ${{ github.workspace }}/pyproject.toml
+          PRTE_MCA_rmaps_default_mapping_policy: :oversubscribe
+        run: |
+          QUTIP_TESTS=$(python -c "import pathlib, qutip; print(pathlib.Path(qutip.__file__).parent / 'tests')")
+          parallel_tests="$QUTIP_TESTS/solver/test_parallel.py"
+          failed=0
+          results=()
+
+          run_sequence() {
+            local sequence="$1"
+            shift
+            local status=0
+            echo "::group::MPI isolation: $sequence"
+            date -u
+            # Each invocation starts a fresh pytest interpreter. GNU timeout
+            # also signals its process group, with SIGKILL after a 10s grace.
+            # Keep diagnostic coverage separate from the full-suite report.
+            if COVERAGE_FILE="$RUNNER_TEMP/.coverage-mpi-$sequence" \
+              timeout --kill-after=10s 300s python -m pytest \
+                -Werror --strict-config --strict-markers --fail-slow=300 \
+                --durations=0 --durations-min=1.0 --verbosity=1 \
+                --cov=qutip --cov-report= --color=yes \
+                -o faulthandler_timeout=60 --setup-show "$@"; then
+              status=0
+            else
+              status=$?
+              failed=1
+            fi
+            echo "Sequence $sequence exited with status $status (124: timeout; 137: SIGKILL)."
+            results+=("$sequence: exit $status")
+            echo "::endgroup::"
+          }
+
+          # Explicit node IDs preserve the backend order within each process.
+          # Run all three even if an earlier sequence fails or times out.
+          run_sequence mpi-only \
+            "$parallel_tests::test_map[1-mpi_pmap]"
+          run_sequence loky-then-mpi \
+            "$parallel_tests::test_map[1-loky_pmap]" \
+            "$parallel_tests::test_map[1-mpi_pmap]"
+          run_sequence parallel-then-loky-then-mpi \
+            "$parallel_tests::test_map[1-parallel_map]" \
+            "$parallel_tests::test_map[1-loky_pmap]" \
+            "$parallel_tests::test_map[1-mpi_pmap]"
+
+          printf '%s\n' "${results[@]}"
+          exit "$failed"
+
       - name: Run tests
         working-directory: ${{ runner.temp }}
         # If our tests are running for longer than an hour, _something_ is wrong
