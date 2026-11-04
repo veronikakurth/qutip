@@ -304,6 +304,9 @@ def parallel_map(task, values, task_args=None, task_kwargs=None,
         list will be returned.
 
     """
+    if sys.platform == "emscripten":
+        raise NotImplementedError(
+            "parallel_map is not available on emscripten, use serial_map")
     if _interactive_backend_active():
         try:
             import loky
