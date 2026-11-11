@@ -1,0 +1,130 @@
+name: Test tutorials
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Family dependencies: development (default) or release'
+        type: choice
+        options:
+          - development
+          - release
+        default: development
+      tutorials_ref:
+        description: 'qutip-tutorials branch, tag, or commit'
+        type: string
+        default: main
+
+concurrency:
+  group: tutorials_${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # Read the shell initialization needed to activate Conda.
+    shell: bash -l -e {0}
+    working-directory: qutip-tutorials
+
+jobs:
+  tests:
+    name: v5 notebooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Check out QuTiP under test
+        uses: actions/checkout@v7
+        with:
+          path: qutip-source
+
+      - name: Check out tutorials
+        uses: actions/checkout@v7
+        with:
+          repository: qutip/qutip-tutorials
+          ref: ${{ inputs.tutorials_ref || 'main' }}
+          path: qutip-tutorials
+
+      - name: Set up upstream v5 environment
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: test-environment-v5
+          channels: conda-forge
+          conda-remove-defaults: "true"
+
+      - name: Install upstream environment
+        run: conda env update -n test-environment-v5 -f test_environment-v5.yml
+
+      # Follow qutip-tutorials/.github/workflows/notebook_ci.yaml, using
+      # development family packages by default and the local QuTiP last.
+      - name: Install family dependencies
+        env:
+          FAMILY_VERSION: ${{ inputs.version }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "jax[cpu]" equinox diffrax
+          if [[ "$FAMILY_VERSION" == "release" ]]; then
+            python -m pip install qutip-qip
+            python -m pip install --no-deps qutip-jax qutip-qtrl qutip-qoc
+          else
+            python -m pip install git+https://github.com/qutip/qutip-qip@master
+            python -m pip install --no-deps git+https://github.com/qutip/qutip-jax
+            python -m pip install --no-deps git+https://github.com/qutip/qutip-qtrl
+            python -m pip install --no-deps git+https://github.com/qutip/qutip-qoc
+          fi
+
+      - name: Install QuTiP under test
+        run: |
+          python -m pip install "${GITHUB_WORKSPACE}/qutip-source[runtime_compilation]" -v
+          python -m ipykernel install --sys-prefix --name python3
+
+      - name: Install ffmpeg and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg texlive-latex-extra
+
+      - name: Verify and show environment
+        run: |
+          conda list
+          git rev-parse HEAD
+          python - <<'PY'
+          import importlib.metadata
+          import json
+          import os
+          from pathlib import Path
+          import qutip
+
+          source = Path(os.environ["GITHUB_WORKSPACE"]) / "qutip-source"
+          origin = json.loads(importlib.metadata.distribution("qutip").read_text("direct_url.json"))
+          assert origin["url"] == source.as_uri(), origin
+          assert not Path(qutip.__file__).is_relative_to(source), qutip.__file__
+          print(qutip.__file__)
+          qutip.about()
+          PY
+
+      - name: Prepare all v5 notebooks
+        run: |
+          cp -r tutorials-v5 notebooks
+          cd notebooks
+          find . -name '*.md' -exec jupytext --to notebook {} +
+          find . -name '*.md' -delete
+          # The upstream CPU job also excludes this GPU-only notebook.
+          rm miscellaneous/cuQuantum_backend.ipynb
+
+      - name: Run notebooks
+        working-directory: qutip-tutorials/notebooks
+        run: |
+          python -m pytest --nbmake --overwrite --nbmake-timeout=900 \
+            --nbmake-kernel=python3 --junitxml=../tutorial-results.xml .
+
+      - name: Upload notebook results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: executed-notebooks-v5
+          path: |
+            qutip-tutorials/notebooks/**/*.ipynb
+            qutip-tutorials/tutorial-results.xml
+          if-no-files-found: warn
