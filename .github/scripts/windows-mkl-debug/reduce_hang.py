@@ -1,6 +1,7 @@
 """Reduce the Windows PARDISO/tomography hang using fresh pytest processes."""
 
 import argparse
+from contextlib import nullcontext
 import json
 import os
 from pathlib import Path
@@ -33,7 +34,21 @@ def worker(args):
         nodes = json.loads(Path(args.nodes).read_text())
         options = ["-vv", "-s", "--timeout=120", "--timeout-method=thread"]
         options += nodes + [str(tests / "test_qpt.py") + "::test_qpt_cnot"]
-    return int(pytest.main(options, plugins=[Recorder()]))
+    comparison = nullcontext()
+    if args.verbose_case is not None:
+        from unittest.mock import patch
+        import qutip.tests.test_mkl as test_mkl
+
+        original_splu = test_mkl.mkl_splu
+
+        def controlled_splu(*positional, **keywords):
+            keywords['verbose'] = args.verbose_case == 'true'
+            print("PARDISO verbose:", keywords['verbose'], flush=True)
+            return original_splu(*positional, **keywords)
+
+        comparison = patch.object(test_mkl, 'mkl_splu', controlled_splu)
+    with comparison:
+        return int(pytest.main(options, plugins=[Recorder()]))
 
 
 def reduce(args):
@@ -52,7 +67,7 @@ def reduce(args):
     deadline = time.monotonic() + args.budget
     results = []
 
-    def attempt(label, selected):
+    def attempt(label, selected, verbose_case=None):
         remaining = deadline - time.monotonic()
         if remaining < 140:
             raise TimeoutError("Reduction budget exhausted; inspect saved results")
@@ -61,6 +76,8 @@ def reduce(args):
         logfile = logs / f"{number:03d}-{label}.log"
         nodefile.write_text(json.dumps(selected, indent=2))
         command = [sys.executable, "-u", script, "--nodes", str(nodefile)]
+        if verbose_case is not None:
+            command += ['--verbose-case', verbose_case]
         with logfile.open("w") as output:
             try:
                 completed = subprocess.run(
@@ -96,6 +113,21 @@ def reduce(args):
         print(message, flush=True)
 
     try:
+        if args.compare_verbose:
+            selected = [node for node in nodes if node.endswith(
+                '::test_splu_nonsymmetric_repeated_vector_rhs')]
+            if len(selected) != 1:
+                raise RuntimeError("Expected exactly one triggering MKL test")
+            outcomes = {}
+            for mode in ('true', 'false'):
+                hangs = attempt(f'verbose-{mode}', selected, verbose_case=mode)
+                outcomes[mode] = 'hang' if hangs else 'pass'
+            report(
+                "PARDISO verbosity comparison (fresh processes, default threading):\n\n"
+                "| verbose | Result |\n| --- | --- |\n"
+                + '\n'.join(f'| {mode} | {outcome} |' for mode, outcome in outcomes.items())
+            )
+            return 0
         if attempt("tomography-alone", []):
             report("Tomography hangs alone; interaction baseline not reproduced.")
             return 1
@@ -139,5 +171,7 @@ if __name__ == "__main__":
     parser.add_argument("--nodes")
     parser.add_argument("--logs", default="mkl-debug-logs/reduction")
     parser.add_argument("--budget", type=int, default=1080)
+    parser.add_argument("--compare-verbose", action="store_true")
+    parser.add_argument("--verbose-case", choices=['true', 'false'])
     arguments = parser.parse_args()
     sys.exit(worker(arguments) if arguments.collect or arguments.nodes else reduce(arguments))

@@ -143,12 +143,12 @@ jobs:
           python -c "import qutip; qutip.about(); print(qutip.settings)" | tee mkl-debug-logs/qutip.txt
           python -m threadpoolctl -i numpy scipy.linalg pydiso.mkl_solver | tee mkl-debug-logs/threadpools.txt
 
-      - name: Find minimal PARDISO trigger for tomography hang
+      - name: Compare verbose and quiet PARDISO before tomography
         working-directory: ${{ runner.temp }}
-        timeout-minutes: 22
+        timeout-minutes: 7
         run: |
           python -u "${{ github.workspace }}/.github/scripts/windows-mkl-debug/reduce_hang.py" \
-            --logs mkl-debug-logs/reduction --budget 1080
+            --compare-verbose --logs mkl-debug-logs/verbosity --budget 360
 
       - name: Upload diagnostic logs
         if: always()
