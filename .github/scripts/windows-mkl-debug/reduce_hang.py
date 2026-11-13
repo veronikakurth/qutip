@@ -70,7 +70,9 @@ def reduce(args):
             except subprocess.TimeoutExpired:
                 code = None
         content = logfile.read_text(errors="replace")
-        starts = [line for line in content.splitlines() if line.startswith("START_NODE ")]
+        # Pytest's progress output may precede the hook marker on the same line.
+        starts = [line.split("START_NODE ", 1)[1].strip()
+                  for line in content.splitlines() if "START_NODE " in line]
         at_tomography = bool(starts and starts[-1].endswith("test_qpt.py::test_qpt_cnot"))
         timed_out = code is None or "Timeout >" in content
         outcome = "hang" if timed_out and at_tomography else "pass" if code == 0 else "error"
