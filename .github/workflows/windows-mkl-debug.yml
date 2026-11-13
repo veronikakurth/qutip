@@ -206,12 +206,43 @@ jobs:
                                "--pyargs", "qutip.tests.test_mkl", "qutip.tests.test_qpt"]))
           ' 2>&1 | tee mkl-debug-logs/pardiso-single-thread.log
 
+      - name: PARDISO default threads then tomography single thread
+        id: tomography_single_thread
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}
+        timeout-minutes: 5
+        run: |
+          set -o pipefail
+          python -u -c '
+          import sys
+          import pytest
+          from pydiso.mkl_solver import get_mkl_max_threads, set_mkl_threads
+
+          class LimitTomographyThreads:
+              switched = False
+
+              def pytest_runtest_setup(self, item):
+                  if item.module.__name__ == "qutip.tests.test_qpt" and not self.switched:
+                      print("MKL threads before tomography:", get_mkl_max_threads(), flush=True)
+                      set_mkl_threads(1)
+                      print("MKL threads after limiting:", get_mkl_max_threads(), flush=True)
+                      assert get_mkl_max_threads() == 1
+                      self.switched = True
+
+          print("Initial MKL threads:", get_mkl_max_threads(), flush=True)
+          sys.exit(pytest.main(["-vv", "--capture=tee-sys", "--timeout=120",
+                               "--timeout-method=thread", "--pyargs",
+                               "qutip.tests.test_mkl", "qutip.tests.test_qpt"],
+                              plugins=[LimitTomographyThreads()]))
+          ' 2>&1 | tee mkl-debug-logs/tomography-single-thread.log
+
       - name: Summarize threading comparison
         if: always()
         env:
           DEFAULT_OUTCOME: ${{ steps.default_threads.outcome }}
           SINGLE_OUTCOME: ${{ steps.single_thread.outcome }}
           PARDISO_OUTCOME: ${{ steps.pardiso_single_thread.outcome }}
+          TOMOGRAPHY_OUTCOME: ${{ steps.tomography_single_thread.outcome }}
         run: |
           {
             echo '| Thread configuration | Result |'
@@ -219,8 +250,10 @@ jobs:
             echo "| Default | $DEFAULT_OUTCOME |"
             echo "| MKL_NUM_THREADS=1, OMP_NUM_THREADS=1 | $SINGLE_OUTCOME |"
             echo "| PARDISO threads=1 only | $PARDISO_OUTCOME |"
+            echo "| Default PARDISO, MKL threads=1 before tomography | $TOMOGRAPHY_OUTCOME |"
           } >> "$GITHUB_STEP_SUMMARY"
           test "$DEFAULT_OUTCOME" = success && test "$SINGLE_OUTCOME" = success && test "$PARDISO_OUTCOME" = success
+          test "$TOMOGRAPHY_OUTCOME" = success
 
       - name: Upload diagnostic logs
         if: always()
