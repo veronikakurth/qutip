@@ -7,7 +7,14 @@ permissions:
   contents: read
 
 on:
-    [push, pull_request]
+  push:
+    paths-ignore:
+      - '.github/workflows/windows-mkl-debug.yml'
+      - '.github/scripts/windows-mkl-debug/**'
+  pull_request:
+    paths-ignore:
+      - '.github/workflows/windows-mkl-debug.yml'
+      - '.github/scripts/windows-mkl-debug/**'
 concurrency:
     group: test_${{ github.ref }}
     cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
