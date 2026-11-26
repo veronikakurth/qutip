@@ -46,7 +46,7 @@ jobs:
           python -m pip install pytest pytest-rerunfailures pytest-cov coveralls pytest-fail-slow
           python -m pip install 'coverage[toml]' chardet
           WHEEL=( "$RUNNER_TEMP"/wheels/qutip-*.whl )
-          python -m pip install "${WHEEL[0]}[runtime_compilation]" numpy scipy
+          python -m pip install "${WHEEL[0]}[graphics,runtime_compilation]" numpy scipy
           python -m pip list
           python -c "import sys, numpy, scipy, qutip; print('Python:', sys.version); print('NumPy:', numpy.__version__); print('SciPy:', scipy.__version__); print('QuTiP:', qutip.__version__, qutip.__file__)"
 
