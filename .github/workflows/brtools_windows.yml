@@ -1,0 +1,58 @@
+name: Reproduce eigen-transform failure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    name: Windows, Python 3.15.2 — test_eigen_transform
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      MPLBACKEND: Agg
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.15.2"
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Remove GNU link.exe from PATH
+        run: rm -f /usr/bin/link.exe /usr/bin/link
+
+      - name: Build QuTiP wheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install meson-python meson ninja cython numpy scipy
+          python -m pip wheel . --no-build-isolation --no-deps --wheel-dir "$RUNNER_TEMP/wheels"
+
+      - name: Install test dependencies and QuTiP
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m pip install pytest pytest-rerunfailures pytest-cov coveralls pytest-fail-slow
+          python -m pip install 'coverage[toml]' chardet
+          python -m pip install "$RUNNER_TEMP"/wheels/qutip-*.whl[runtime_compilation] numpy scipy
+          python -m pip list
+          python -c "import sys, numpy, scipy, qutip; print('Python:', sys.version); print('NumPy:', numpy.__version__); print('SciPy:', scipy.__version__); print('QuTiP:', qutip.__version__, qutip.__file__)"
+
+      - name: Run only the failing test
+        working-directory: ${{ runner.temp }}
+        env:
+          PYTHONFAULTHANDLER: "1"
+        run: |
+          QUTIP_TESTS=$(python -c "import pathlib, qutip; print(pathlib.Path(qutip.__file__).parent / 'tests')")
+          python -m pytest \
+            -Werror --strict-config --strict-markers --fail-slow=300 \
+            --durations=0 --verbosity=2 --tb=long -s \
+            "$QUTIP_TESTS/core/test_brtools.py::test_eigen_transform"
